@@ -1,6 +1,6 @@
 # Brendan Thorn - October 2016
-# A brief program to test whether top NHL goal scorers (>20 goals in given season)
-# go on "hot streaks", i.e. Are they more likely to score in a game when they have
+# A brief program to simplistically test whether top NHL goal scorers (>20 goals in given 
+# season) go on "hot streaks", i.e. Are they more likely to score in a game when they have
 # scored in the previous game. The answer appears to be NO!
 
 # NOTE: If you're having problems running the program, check that the config json file
