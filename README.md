@@ -1,4 +1,4 @@
-DemoFiles
+DemoFiles -
 A few files and documents demonstrating some of my work:
 
 ```1. thorn_nhl1516_db.sql.zip``` - A compressed sql file of an NHL database for the 20152016 season. Code for web-scraping, database construction and population, as well as conceptual framework developed by Nolan Thorn and Brendan Thorn. Contact Brendan at brendankthorn@gmail.com for any inquiries about database use.
