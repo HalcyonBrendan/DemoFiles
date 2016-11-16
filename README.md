@@ -7,7 +7,7 @@ To set up DB on your system, download and decompress file. You must have MySQL (
 
 > source [filepath]/thorn_nhl1516_db.sql
 
-```2. NHL_PlayerHotStreaks folder``` - A sample python script, which uses the above NHL DB, that prints out some stats demonstrating the non-existence of goal-scoring "hot streaks". I.E. A 20+ goal scorer is just as likely to score in a game after not scoring in the previous game as he is if he had scored in the previous game. Once you have python installed on your system, run it through the terminal (from the NHL_PlayerHotStreaks folder) with:
+```2. NHL_Analytics folder``` - Some simple python scripts, which uses the above NHL DB, to display some stats; For example, PlayerHotStreaks demonstrates the non-existence of goal-scoring "hot streaks". I.E. A 20+ goal scorer is just as likely to score in a game after not scoring in the previous game as he is if he had scored in the previous game. Once you have python installed on your system, run scripts through the terminal (from the NHL_Analytics folder), e.g. with:
 
 > python PlayerHotStreaks.py
 
