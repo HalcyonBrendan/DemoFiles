@@ -20,18 +20,20 @@ class PlayerData():
 		self.db = StatsDB.StatsDB()
 		self.season = season
 		self.players = self.retrieve_players(min_games)
-		self.player_stats, self.player_weights = self.retrieve_player_stats()
+		self.player_stats = self.retrieve_player_stats()
 
 	# Query db for list of forwards who played at least min_games games in season
 	def retrieve_players(self,min_games):
 		query = "SELECT player FROM (SELECT player, COUNT(*) AS GP FROM TOI{0} GROUP BY player) AS T WHERE GP>{1} ORDER BY GP DESC;".format(self.season,min_games)
-		all_players = pd.read_sql(query,con=self.db.db)
+		elig_players = pd.read_sql(query,con=self.db.db)
 
-		query = "SELECT name FROM PlayerRatings{0} WHERE position=\"C\" OR position=\"LW\" OR position=\"RW\";".format(self.season)
+		query = "SELECT name, weight FROM PlayerRatings{0} WHERE position=\"C\" OR position=\"LW\" OR position=\"RW\";".format(self.season)
 		forwards = pd.read_sql(query,con=self.db.db)
 
-		players = all_players.loc[all_players["player"].isin(forwards["name"])]
+		players = forwards.loc[forwards["name"].isin(elig_players["player"])]
 		players = players.reset_index()
+		del players["index"]
+		players.columns = ["player","weight"]
 		return players
 
 	# Query db for date and points info for every game played by each player
@@ -42,10 +44,6 @@ class PlayerData():
 		for i in range(len(self.players)):
 			player = self.players.player[i]
 			print "Getting stats from DB for ", player
-			# Get player weight
-			query = "SELECT weight FROM PlayerRatings{0} WHERE name=\"{1}\";".format(self.season,player)
-			pw_df = pd.read_sql(query,con=self.db.db)
-			player_weights[player] = pw_df
 
 			# Get all games played by player
 			query = "SELECT gameID FROM TOI{0} WHERE player=\"{1}\";".format(self.season,player)
@@ -65,7 +63,7 @@ class PlayerData():
 
 			player_stats[player] = ps_df
 
-		return player_stats, player_weights
+		return player_stats
 
 
 class StatComputations():
@@ -73,8 +71,7 @@ class StatComputations():
 	def __init__(self,player_data,fatigue_days):
 		self.player_data = player_data
 		self.fat_days = fatigue_days
-		self.fatigue = self.compute_fatigue()
-		self.fatigue_agg_df = self.aggregate_fatigue()
+		self.fatigue_dict = self.compute_fatigue()
 
 	def compute_fatigue(self):
 		print ""
@@ -108,32 +105,85 @@ class StatComputations():
 
 		return fatigue_avgs
 
-
-	def build_plots(self):
-		plt.figure()
-		plt.plot(self.fatigue_agg_df.index.values,self.fatigue_agg_df["points"].values,'bx')
-		plt.show()
-
-	# Combine dictionary of fatigue_avg dfs into single df
-	def aggregate_fatigue(self):
-		agg_df = pd.DataFrame()
+	# Separate fatigue stats based on player weights
+	def fatigue_by_weight(self,weight_bounds):
 		players = self.player_data.players
+		players_by_weight = []
+		fatigue_by_weight = []
+
+		for i in range(1,len(weight_bounds)):
+			#print "\nWeight class ", weight_bounds[i-1], " to ", weight_bounds[i], "\n"
+			plyrs_wt_df = players.query('(weight >= @weight_bounds[@i-1]) & (weight < @weight_bounds[@i])')
+			players_by_weight.append(plyrs_wt_df)
+			#print plyrs_wt_df
+
+			count = 0
+			for player in plyrs_wt_df.player:
+				if count == 0:
+					fat_wt_df = self.fatigue_dict[player]
+				else:
+					fat_wt_df = fat_wt_df.append(self.fatigue_dict[player])
+				count +=1
+			fatigue_by_weight.append(fat_wt_df)
+			#print fat_wt_df
+
+		return fatigue_by_weight, players_by_weight
+
+
+	def make_plots(self,fatigue_by_weight,agg_by_weight,weight_bounds):
+		if not type(fatigue_by_weight) is list:
+			fatigue_by_weight = [fatigue_by_weight]
+		if not type(agg_by_weight) is list:
+			agg_by_weight = [agg_by_weight]
+
+		###########
+		# TO DO!!!!
+
+		# SELECT A SUBSET OF DENSITIES (WITH GOOD POPULATIONS) TO USE FOR STATS/PLOTTING
+
+		###########
+
+		x_string = "Games played in previous ", self.fat_days, " days"
+		y_string = "Points per game average by player"
 
 		count = 0
-		for player in players.player:
-			print player
-			if count == 0:
-				agg_df = self.fatigue[player]
-			else:
-				agg_df = agg_df.append(self.fatigue[player])
+		for fbw,abw in zip(fatigue_by_weight,agg_by_weight):
+			plt.figure(count+1)
+			# Plot individual player points and aggregated mean points, then add best fit line
+			x1 = fbw.index.values
+			y1 = fbw["points"].values
+			x2 = abw.index.values
+			y2 = abw["points"].values
+			x3 = np.unique(x1)
+			y3 = np.poly1d(np.polyfit(x1, y1, 1))(np.unique(x1))
+			plt.plot(x1,y1,'bx',x2,y2,"ro",x3,y3,"g")
+			# Add some labels
+			title_string = "Players weighing between ", weight_bounds[count], "lbs and ", weight_bounds[count+1], "lbs"
+			plt.xlabel(x_string)
+			plt.ylabel(y_string)
+			plt.title(title_string)
 			count += 1
-		return agg_df
+		plt.show()
+
+
+	# Group fatigue stats (points) in each weight class by game density 
+	def agg_by_weight(self,fatigue_by_weight):
+		if not type(fatigue_by_weight) is list:
+			fatigue_by_weight = [fatigue_by_weight]
+
+		agg_by_weight = []
+		for fat in fatigue_by_weight:
+			agg_df = fat.groupby(fat.index).mean()
+			agg_by_weight.append(agg_df)
+		return agg_by_weight
+
 
 	# Computes number of games played since prev_date, not including game on cur_date
 	def compute_game_density(self,prev_date,cur_date,player_stats):
 		# Count games that occurred >= prev_date and < cur_date
 		num_games = player_stats.query('(date >= @prev_date) & (date < @cur_date)').count()["date"]
-		density = 1.*num_games/self.fat_days
+		density = 1.*num_games
+		#density = 1.*num_games/self.fat_days
 		return density
 
 	# Given current date, computes date that occurred self.fat_days earlier
@@ -151,11 +201,14 @@ if __name__ == "__main__":
 
 	# TO SET
 	season = 20152016
-	min_games = 70
+	min_games = 41
 	fatigue_days = 14
+	weight_bounds = [140,180,195,205,215,230,270]
 
 
 	pld = PlayerData(season,min_games)
 	sc = StatComputations(pld,fatigue_days)
-	sc.build_plots()
+	fbw,pbw = sc.fatigue_by_weight(weight_bounds)
+	abw = sc.agg_by_weight(fbw)
+	sc.make_plots(fbw,abw,weight_bounds)
 
