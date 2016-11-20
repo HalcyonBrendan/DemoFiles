@@ -28,7 +28,7 @@ WHERE (Goals+Shots+Blocks+Misses)>150
 ORDER BY Shots_Through_Per ASC;
 
 
-Certain players, such as Alex Edler (the inspiration for this query) and Marc-Edouard Vlasic, are consistently unable to get shots through to the net, and thus appear near the top of the list in all three seasons. Note, that for obvious reasons, defencemen are heavily represented with poor shots through percentages (STPs), while forwards have much higher STPs. Netfront and rush players, like Justin Abdelkader, Loui Eriksson, Jonathan Toews, Sidney Crosby, and Jimmy Hayes, consistently appear with the highest STPs, and volume shooters (and scorers), such as Steven Stamkos and Alex Ovenchkin, end up somewhere in the middle.
+Certain players, such as Alex Edler (the inspiration for this query) and Marc-Edouard Vlasic, are consistently unable to get shots through to the net, and thus appear near the top of the list in all three seasons. Note, that for obvious reasons, defencemen are heavily represented with poor shots through percentages (STPs), while forwards have much higher STPs. Netfront and rush players, like Justin Abdelkader, Loui Eriksson, Jonathan Toews, Sidney Crosby, and Jimmy Hayes, consistently appear with the highest STPs, and volume shooters (and scorers), such as Steven Stamkos and Alex Ovenchkin, end up somewhere in the middle. These consistent appearances suggest getting shots on net is a repeatable skill, although the relative importance (vs total attempt volume) may be more arguable.
 
 
 20152016:
