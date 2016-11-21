@@ -130,38 +130,54 @@ class StatComputations():
 		return fatigue_by_weight, players_by_weight
 
 
-	def make_plots(self,fatigue_by_weight,agg_by_weight,weight_bounds):
+	def make_plots(self,fatigue_by_weight,agg_by_weight,agg_by_weight_err,weight_bounds):
 		if not type(fatigue_by_weight) is list:
 			fatigue_by_weight = [fatigue_by_weight]
 		if not type(agg_by_weight) is list:
 			agg_by_weight = [agg_by_weight]
 
-		###########
-		# TO DO!!!!
-
-		# SELECT A SUBSET OF DENSITIES (WITH GOOD POPULATIONS) TO USE FOR STATS/PLOTTING
-
-		###########
+		# Set min and max number of games in last self.fat_days you want to consider for stats
+		if self.fat_days < 7:
+			min_games = 1
+			max_games = 3
+		elif self.fat_days < 10:
+			min_games = 2
+			max_games = 5
+		else:
+			min_games = 3
+			max_games = math.floor(self.fat_days/2)
 
 		x_string = "Games played in previous ", self.fat_days, " days"
 		y_string = "Points per game average by player"
 
 		count = 0
-		for fbw,abw in zip(fatigue_by_weight,agg_by_weight):
+		for fbw,abw,abw_err in zip(fatigue_by_weight,agg_by_weight,agg_by_weight_err):
 			plt.figure(count+1)
-			# Plot individual player points and aggregated mean points, then add best fit line
+			# Plot individual player points
 			x1 = fbw.index.values
 			y1 = fbw["points"].values
-			x2 = abw.index.values
-			y2 = abw["points"].values
+			# Select and plot aggregated means for values between min_games and max_games
+			abw_sel = abw.query('(density >= @min_games) & (density <= @max_games)')
+			x2 = abw_sel.index.values
+			y2 = abw_sel["points"].values
+			# Select values between min_games and max_games for individual players, plot best fit
+			fbw_sel = fbw.query('(density >= @min_games) & (density <= @max_games)')
 			x3 = np.unique(x1)
-			y3 = np.poly1d(np.polyfit(x1, y1, 1))(np.unique(x1))
+			y3 = np.poly1d(np.polyfit(fbw_sel.index.values, fbw_sel["points"].values, 1))(np.unique(x3))
 			plt.plot(x1,y1,'bx',x2,y2,"ro",x3,y3,"g")
-			# Add some labels
+			plt.hold(True)
+			# Add error bars
+			abw_err_sel = abw_err.query('(density >= @min_games) & (density <= @max_games)')
+			plt.errorbar(x2,y2,yerr=abw_err_sel["points"].values,fmt='ro')
+			# Add some labels and formatting
+			plt.xlim([min(x2)-.5,max(x2)+.5])
+			plt.ylim([0,1.5])
 			title_string = "Players weighing between ", weight_bounds[count], "lbs and ", weight_bounds[count+1], "lbs"
 			plt.xlabel(x_string)
 			plt.ylabel(y_string)
 			plt.title(title_string)
+			plt.hold(False)
+
 			count += 1
 		plt.show()
 
@@ -172,10 +188,23 @@ class StatComputations():
 			fatigue_by_weight = [fatigue_by_weight]
 
 		agg_by_weight = []
-		for fat in fatigue_by_weight:
-			agg_df = fat.groupby(fat.index).mean()
+		agg_by_weight_std = []
+		for fbw in fatigue_by_weight:
+			agg_df = fbw.groupby(fbw.index).mean()
+
+			agg_std = fbw.groupby(fbw.index).std()
+			print "ok"
+			print agg_std
+			print "um"
+			print np.sqrt(fbw.groupby(fbw.index).count())
+
+			agg_std_err = agg_std.divide(np.sqrt(fbw.groupby(fbw.index).count()))
+			print "so"
+			print agg_std_err
+
 			agg_by_weight.append(agg_df)
-		return agg_by_weight
+			agg_by_weight_std.append(agg_std_err)
+		return agg_by_weight, agg_by_weight_std
 
 
 	# Computes number of games played since prev_date, not including game on cur_date
@@ -201,7 +230,7 @@ if __name__ == "__main__":
 
 	# TO SET
 	season = 20152016
-	min_games = 41
+	min_games = 61
 	fatigue_days = 14
 	weight_bounds = [140,180,195,205,215,230,270]
 
@@ -209,6 +238,6 @@ if __name__ == "__main__":
 	pld = PlayerData(season,min_games)
 	sc = StatComputations(pld,fatigue_days)
 	fbw,pbw = sc.fatigue_by_weight(weight_bounds)
-	abw = sc.agg_by_weight(fbw)
-	sc.make_plots(fbw,abw,weight_bounds)
+	abw, abw_err = sc.agg_by_weight(fbw)
+	sc.make_plots(fbw,abw,abw_err,weight_bounds)
 
