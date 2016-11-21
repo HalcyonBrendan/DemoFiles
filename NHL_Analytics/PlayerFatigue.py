@@ -164,6 +164,7 @@ class StatComputations():
 			fbw_sel = fbw.query('(density >= @min_games) & (density <= @max_games)')
 			x3 = np.unique(x1)
 			y3 = np.poly1d(np.polyfit(fbw_sel.index.values, fbw_sel["points"].values, 1))(np.unique(x3))
+			print str(np.poly1d(np.polyfit(fbw_sel.index.values, fbw_sel["points"].values, 1)))
 			plt.plot(x1,y1,'bx',x2,y2,"ro",x3,y3,"g")
 			plt.hold(True)
 			# Add error bars
@@ -176,6 +177,8 @@ class StatComputations():
 			plt.xlabel(x_string)
 			plt.ylabel(y_string)
 			plt.title(title_string)
+			leg_str = "Linear Fit: " + str(np.poly1d(np.polyfit(fbw_sel.index.values, fbw_sel["points"].values, 1)))
+			plt.figtext(.5,.75,leg_str)
 			plt.hold(False)
 
 			count += 1
@@ -191,17 +194,8 @@ class StatComputations():
 		agg_by_weight_std = []
 		for fbw in fatigue_by_weight:
 			agg_df = fbw.groupby(fbw.index).mean()
-
 			agg_std = fbw.groupby(fbw.index).std()
-			print "ok"
-			print agg_std
-			print "um"
-			print np.sqrt(fbw.groupby(fbw.index).count())
-
 			agg_std_err = agg_std.divide(np.sqrt(fbw.groupby(fbw.index).count()))
-			print "so"
-			print agg_std_err
-
 			agg_by_weight.append(agg_df)
 			agg_by_weight_std.append(agg_std_err)
 		return agg_by_weight, agg_by_weight_std
