@@ -164,7 +164,8 @@ class StatComputations():
 			fbw_sel = fbw.query('(density >= @min_games) & (density <= @max_games)')
 			x3 = np.unique(x1)
 			y3 = np.poly1d(np.polyfit(fbw_sel.index.values, fbw_sel["points"].values, 1))(np.unique(x3))
-			print str(np.poly1d(np.polyfit(fbw_sel.index.values, fbw_sel["points"].values, 1)))
+
+			# Create plot
 			plt.plot(x1,y1,'bx',x2,y2,"ro",x3,y3,"g")
 			plt.hold(True)
 			# Add error bars
@@ -173,7 +174,7 @@ class StatComputations():
 			# Add some labels and formatting
 			plt.xlim([min(x2)-.5,max(x2)+.5])
 			plt.ylim([0,1.5])
-			title_string = "Players weighing between ", weight_bounds[count], "lbs and ", weight_bounds[count+1], "lbs"
+			title_string = self.player_data.season, " Players weighing between ", weight_bounds[count], "lbs and ", weight_bounds[count+1], "lbs"
 			plt.xlabel(x_string)
 			plt.ylabel(y_string)
 			plt.title(title_string)
@@ -223,10 +224,17 @@ class StatComputations():
 if __name__ == "__main__":
 
 	# TO SET
-	season = 20152016
+	try: 
+		season = int(sys.argv[1])
+	except:
+		season = 20152016
+
+	try:
+		fatigue_days = int(sys.argv[2])
+	except:
+		fatigue_days = 14
 	min_games = 61
-	fatigue_days = 14
-	weight_bounds = [140,180,195,205,215,230,270]
+	weight_bounds = [140,182,195,203,210,220,270]
 
 
 	pld = PlayerData(season,min_games)
