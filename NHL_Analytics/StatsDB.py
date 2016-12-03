@@ -16,3 +16,6 @@ class StatsDB():
 		self.cursor.execute(query_string)
 		sqlOut = self.cursor.fetchall()
 		return sqlOut
+
+	def get_connection(self):
+		return self.db
