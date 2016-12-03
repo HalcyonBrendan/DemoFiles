@@ -3,6 +3,9 @@
 # A file to find optimal exponent value, d, for "pythagorean wins" theorom for hockey.
 # win % = GF^d/(GF^d + GA^d)
 # where GF = team goals for, GA = team goals against, and in both cases empty net and shootout goals will not be counted.
+#
+# Currently define "optimal" as exponent that maximizes R^2 coeff, or, equivalenty, minimizes MSE between true number of
+# wins and predicted number of wins by pythag theorem.
 
 import MySQLdb, re, time, sys, math, signal
 from datetime import date, timedelta
