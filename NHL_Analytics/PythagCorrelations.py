@@ -19,8 +19,9 @@ import StatsDB
 
 class TeamStats():
 
-	def __init__(self, season):
+	def __init__(self, season, max_dist):
 		self.db = StatsDB.StatsDB()
+		self.max_dist = max_dist
 		if season == "combined":
 			self.stats, self.team_GPs = self.retrieve_combined_stats()
 		else:
@@ -40,16 +41,16 @@ class TeamStats():
 
 	def retrieve_combined_stats(self):
 		query = """SELECT A1.team AS team, A1.GF+A2.GF+A3.GF AS GF, B1.GA+B2.GA+B3.GA AS GA, C1.Wins+C2.Wins+C3.Wins AS Wins 
-			FROM (SELECT team, COUNT(*) AS GF FROM Goals20132014 WHERE period<5 AND distance<70 GROUP BY team) AS A1
-			JOIN (SELECT team, COUNT(*) AS GF FROM Goals20142015 WHERE period<5 AND distance<70 GROUP BY team) AS A2 ON A1.team = A2.team
-			JOIN (SELECT team, COUNT(*) AS GF FROM Goals20152016 WHERE period<5 AND distance<70 GROUP BY team) AS A3 ON A1.team = A3.team
-			JOIN (SELECT opponent, COUNT(*) AS GA FROM Goals20132014 WHERE period<5 AND distance<70 GROUP BY opponent) AS B1 ON A1.team = B1.opponent 
-			JOIN (SELECT opponent, COUNT(*) AS GA FROM Goals20142015 WHERE period<5 AND distance<70 GROUP BY opponent) AS B2 ON A1.team = B2.opponent 
-			JOIN (SELECT opponent, COUNT(*) AS GA FROM Goals20152016 WHERE period<5 AND distance<70 GROUP BY opponent) AS B3 ON A1.team = B3.opponent 
+			FROM (SELECT team, COUNT(*) AS GF FROM Goals20132014 WHERE period<5 AND distance<{0} GROUP BY team) AS A1
+			JOIN (SELECT team, COUNT(*) AS GF FROM Goals20142015 WHERE period<5 AND distance<{0} GROUP BY team) AS A2 ON A1.team = A2.team
+			JOIN (SELECT team, COUNT(*) AS GF FROM Goals20152016 WHERE period<5 AND distance<{0} GROUP BY team) AS A3 ON A1.team = A3.team
+			JOIN (SELECT opponent, COUNT(*) AS GA FROM Goals20132014 WHERE period<5 AND distance<{0} GROUP BY opponent) AS B1 ON A1.team = B1.opponent 
+			JOIN (SELECT opponent, COUNT(*) AS GA FROM Goals20142015 WHERE period<5 AND distance<{0} GROUP BY opponent) AS B2 ON A1.team = B2.opponent 
+			JOIN (SELECT opponent, COUNT(*) AS GA FROM Goals20152016 WHERE period<5 AND distance<{0} GROUP BY opponent) AS B3 ON A1.team = B3.opponent 
 			JOIN (SELECT winner, COUNT(*) AS Wins FROM Games20132014 WHERE winner=team GROUP BY winner) AS C1 ON A1.team = C1.winner 
 			JOIN (SELECT winner, COUNT(*) AS Wins FROM Games20142015 WHERE winner=team GROUP BY winner) AS C2 ON A1.team = C2.winner 
 			JOIN (SELECT winner, COUNT(*) AS Wins FROM Games20152016 WHERE winner=team GROUP BY winner) AS C3 ON A1.team = C3.winner 
-			ORDER BY A1.team;"""
+			ORDER BY A1.team;""".format(self.max_dist)
 		goal_stats = pd.read_sql(query,con=self.db.get_connection())
 		#print goal_stats
 		team_GPs = 246
@@ -120,6 +121,7 @@ class PythagCorrelations():
 
 if __name__ == "__main__":
 	# TO SET
+	max_dist = 65
 	if len(sys.argv) > 1:
 		try: season = sys.argv[1]
 		except: 
@@ -133,5 +135,5 @@ if __name__ == "__main__":
 		print "If you include \"combined\" as the argument, the program will try to compute for the three seasons 2013-2016."
 		print "If your Halcyon_NHL database is not up-to-date, program will likely crash."
 
-	ts = TeamStats(season)
+	ts = TeamStats(season,max_dist)
 	pc = PythagCorrelations(season,ts)
